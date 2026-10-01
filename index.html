@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الشطرنج الشاملة - نسخة المحترفين</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <style>
+        /* التصميم المشابه لـ Chess.com */
+        body { 
+            background-color: #312e2b; 
+            color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* حاوية الدخول وكلمة المرور */
+        #loginOverlay {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: #312e2b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: background-color 0.3s;
+        }
+
+        .login-box {
+            background-color: #262421;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 350px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #4c4a47;
+            background-color: #312e2b;
+            color: #fff;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 16px;
+            text-align: center;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        /* حاوية اللعبة الأساسية */
+        #gameContainer {
+            display: none; 
+            width: 100%; 
+            flex-direction: column; 
+            align-items: center; 
+            margin-top: 20px; 
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .container-w {
+            width: 100%;
+            max-width: 480px;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease;
+        }
+
+        #board { 
+            width: 100%; 
+            max-width: 480px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+            transition: transform 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
+        }
+        
+        /* تفعيل وضع الـ 3D المجسم */
+        .board-3d-active {
+            transform: perspective(800px) rotateX(15deg) scale(0.95);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 4px solid #4a4a4a;
+            border-bottom-width: 15px; /* سمك الرقعة */
+            border-radius: 4px;
+        }
+
+        .info-container { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            background-color: #262421;
+            padding: 15px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s, max-width 0.3s;
+        }
+
+        h2 { 
+            margin: 0 0 5px 0; 
+            color: #fff; 
+            font-size: 22px; 
+            transition: color 0.3s; 
+        }
+        
+        #openingName {
+            color: #f39c12;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .settings-grid, .buttons-grid, .auto-play-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #gameMode { 
+            grid-column: span 2; 
+        }
+        
+        select {
+            background-color: #363431;
+            color: #fff;
+            border: 1px solid #4c4a47;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        button { 
+            background-color: #363431; 
+            color: #c3c2c1; 
+            border: none; 
+            padding: 12px 10px; 
+            font-size: 14px; 
+            font-weight: bold;
+            cursor: pointer; 
+            border-radius: 8px; 
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        button:hover { 
+            background-color: #4c4a47; 
+            color: #fff; 
+        }
+        
+        .btn-primary { 
+            background-color: #81b64c !important; 
+            color: white !important; 
+            grid-column: span 2; 
+            font-size: 18px; 
+        }
+
+        .btn-primary:hover { 
+            background-color: #95c961 !important; 
+        }
+
+        .btn-danger { 
+            background-color: #cc3333 !important; 
+            color: white !important; 
+            grid-column: span 2; 
+            font-size: 18px; 
+        }
+
+        .btn-danger:hover { 
+            background-color: #e60000 !important; 
+        }
+        
+        #status { 
+            font-size: 1.2em; 
+            font-weight: bold; 
+            color: #81b64c; 
+        }
+
+        /* تنسيقات إظهار الحركات والألوان */
+        .highlight-square { 
+            background-color: rgba(255, 255, 0, 0.4) !important; 
+            cursor: pointer; 
+        }
+
+        .highlight-last-move { 
+            background-color: rgba(155, 199, 0, 0.6) !important; 
+        }
+        
+        /* تأثير البريموف (اللون الأحمر) */
+        .highlight-premove { 
+            background-color: rgba(220, 20, 60, 0.6) !important; 
+            cursor: pointer; 
+        }
+
+        .square-55d63 { 
+            cursor: pointer; 
+        }
+
+        .legal-move-indicator {
+            width: 30%; 
+            height: 30%; 
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 50%; 
+            position: absolute; 
+            top: 35%; 
+            left: 35%;
+            pointer-events: none; 
+            z-index: 10;
+        }
+
+        .legal-move-indicator.capture {
+            width: 80%; 
+            height: 80%; 
+            background-color: transparent;
+            border: 5px solid rgba(0, 0, 0, 0.4); 
+            top: 10%; 
+            left: 10%; 
+            box-sizing: border-box;
+        }
+
+        /* تصميم التوقيت (المؤقت) */
+        .timer-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-bottom: 15px; 
+        }
+
+        .timer-box {
+            background-color: #262421; 
+            padding: 10px; 
+            border-radius: 8px;
+            text-align: center; 
+            border: 2px solid transparent; 
+            transition: all 0.3s ease;
+        }
+
+        .timer-box span:nth-child(2) { 
+            font-size: 24px; 
+            font-weight: bold; 
+            font-family: monospace; 
+            display: block; 
+            margin-top: 5px; 
+        }
+
+        .timer-active { 
+            border-color: #81b64c; 
+            background-color: #312e2b; 
+            box-shadow: 0 0 10px rgba(129, 182, 76, 0.5); 
+        }
+
+        .timer-danger-text { 
+            color: #ff4c4c !important; 
+        }
+
+        /* حاوية القطع المأكولة */
+        .captured-area {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 4px; 
+            min-height: 42px;
+            background-color: #262421; 
+            border-radius: 8px; 
+            padding: 5px 10px;
+            align-items: center; 
+            justify-content: flex-start; 
+            transition: background-color 0.3s;
+        }
+
+        .captured-area.top { margin-bottom: 10px; }
+        .captured-area.bottom { margin-top: 10px; margin-bottom: 15px; }
+        
+        .captured-piece { 
+            width: 32px; 
+            height: 32px; 
+            cursor: pointer; 
+            transition: transform 0.1s; 
+        }
+
+        .captured-piece:hover { 
+            transform: scale(1.1); 
+        }
+
+        .selected-captured { 
+            border: 2px solid #81b64c; 
+            border-radius: 4px; 
+            background-color: rgba(129, 182, 76, 0.3); 
+            transform: scale(1.1); 
+        }
+
+        /* شريط التعليق (الجديد) */
+        .commentary-box {
+            background-color: #1b1a18;
+            border-right: 5px solid #f39c12;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #ecf0f1;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            text-align: right;
+            direction: rtl;
+        }
+
+        /* تصميم جدول أسماء القطع */
+        .pieces-glossary {
+            background-color: #262421;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            transition: background-color 0.3s;
+        }
+
+        .pieces-table { 
+            width: 100%; 
+            text-align: center; 
+            color: #ddd; 
+            font-size: 15px; 
+            border-collapse: collapse; 
+        }
+
+        .pieces-table th { 
+            background-color: #363431; 
+            padding: 8px; 
+            color:#f39c12; 
+        }
+
+        .pieces-table td { 
+            padding: 8px; 
+            border-bottom: 1px solid #444; 
+        }
+
+        .pieces-table tr:nth-child(even) { 
+            background-color: #2a2825; 
+        }
+
+        /* نافذة التحذير والترقية */
+        #drawWarningModal, #promotionModal {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0,0,0,0.7); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9998;
+        }
+
+        #promotionModal { 
+            background-color: rgba(0,0,0,0.8); 
+            z-index: 10001; 
+        }
+
+        .warning-box, .promotion-box {
+            background-color: #262421; 
+            padding: 25px; 
+            border-radius: 10px; 
+            text-align: center; 
+            width: 90%; 
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); 
+            border: 2px solid #e67e22; 
+            transition: background-color 0.3s;
+        }
+
+        .promotion-box { 
+            border: 2px solid #81b64c; 
+            padding: 20px; 
+        }
+
+        .warning-box h3 { color: #f39c12; margin-top: 0; }
+        .warning-box p { color: #ddd; font-size: 15px; margin-bottom: 20px; }
+        
+        .warning-btn { 
+            background-color: #e67e22; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+        }
+
+        .warning-btn:hover { background-color: #d35400; }
+        .promotion-box h3 { color: #fff; margin-top: 0; margin-bottom: 15px; }
+        
+        .promotion-piece { 
+            width: 60px; 
+            height: 60px; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            margin: 5px; 
+            background-color: #363431; 
+            border-radius: 8px; 
+            padding: 5px; 
+        }
+
+        .promotion-piece:hover { 
+            transform: scale(1.1); 
+            background-color: #81b64c; 
+        }
+
+        /* ---------------- أنماط جديدة (لايت مود / ديسكتوب) ---------------- */
+        body.light-mode { background-color: #f4f6f8; color: #2c3e50; }
+        body.light-mode #loginOverlay { background-color: #f4f6f8; }
+        body.light-mode .login-box, 
+        body.light-mode .info-container, 
+        body.light-mode .timer-box, 
+        body.light-mode .captured-area, 
+        body.light-mode .warning-box, 
+        body.light-mode .promotion-box, 
+        body.light-mode .pieces-glossary { 
+            background-color: #ffffff; 
+            color: #2c3e50; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            border: 1px solid #ddd; 
+        }
+        
+        /* تفعيل اللايت مود للتعليق */
+        body.light-mode .commentary-box {
+            background-color: #ffffff;
+            color: #2c3e50;
+            border-right: 5px solid #d35400;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            border-left: 1px solid #ddd;
+        }
+
+        body.light-mode .login-box h3, 
+        body.light-mode h2, 
+        body.light-mode .promotion-box h3, 
+        body.light-mode .warning-box p { 
+            color: #2c3e50; 
+        }
+        
+        body.light-mode .login-box input { 
+            background-color: #f9f9f9; 
+            color: #2c3e50; 
+            border: 1px solid #ccc; 
+        }
+        
+        body.light-mode select, 
+        body.light-mode button:not(.btn-primary):not(.btn-danger):not(.btn-info):not(#manualTurnBtn):not(#scanBoardBtn) { 
+            background-color: #ecf0f1; 
+            color: #2c3e50; 
+            border: 1px solid #bdc3c7; 
+        }
+
+        body.light-mode button:not(.btn-primary):not(.btn-danger):not(.btn-info):not(#manualTurnBtn):not(#scanBoardBtn):hover { 
+            background-color: #d5dbdb; 
+        }
+
+        body.light-mode .timer-active { 
+            border-color: #27ae60; 
+            background-color: #eafaf1; 
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.3); 
+        }
+
+        body.light-mode .pieces-table th { 
+            background-color: #ecf0f1; 
+            color: #d35400; 
+        }
+
+        body.light-mode .pieces-table tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+
+        body.desktop-view .container-w, 
+        body.desktop-view #board, 
+        body.desktop-view .info-container, 
+        body.desktop-view .settings-grid, 
+        body.desktop-view .buttons-grid, 
+        body.desktop-view .auto-play-grid, 
+        body.desktop-view .timer-grid, 
+        body.desktop-view .captured-area,
+        body.desktop-view .commentary-box,
+        body.desktop-view .pieces-glossary {
+            max-width: 750px !important;
+        }
+    </style>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="./manifest.json?v=v1786271956328">
+    <meta name="theme-color" content="#2f686c">
+    <link rel="apple-touch-icon" href="./icon-192.png?v=v1786271956328">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=v1786271956328')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="./manifest.json?v=v1789973955997">
+    <meta name="theme-color" content="#b659d9">
+    <link rel="apple-touch-icon" href="./icon-192.png?v=v1789973955997">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=v1789973955997')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="./manifest.json?v=v1790781368599">
+    <meta name="theme-color" content="#7b76bc">
+    <link rel="apple-touch-icon" href="./icon-192.png?v=v1790781368599">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=v1790781368599')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
+</head>
+<body>
+
+    <!-- واجهة تسجيل الدخول -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h3 style="margin-top:0;">شطرنج - نظام محمي 🔒</h3>
+            <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور...">
+            <button id="loginBtn" class="btn-primary" style="width: 100%;">دخول</button>
+            <div id="loginError" style="color: #ff4c4c; display: none; margin-top: 10px; font-weight: bold;">كلمة المرور غير صحيحة!</div>
+        </div>
+    </div>
+
+    <!-- نافذة تحذير التعادل -->
+    <div id="drawWarningModal">
+        <div class="warning-box">
+            <h3>⚠️ تحذير تعادل وشيك!</h3>
+            <p id="drawWarningText">الحركة دي هتوصل الجيم لتعادل (ستيماليت أو تكرار)! متأكد إنك عايز تلعبها؟</p>
+            <button class="warning-btn" id="closeWarningBtn">حسناً، فهمت</button>
+        </div>
+    </div>
+
+    <!-- نافذة الترقية الحرة -->
+    <div id="promotionModal">
+        <div class="promotion-box">
+            <h3>اختر القطعة للترقية</h3>
+            <div id="promotionPieces" style="display: flex; justify-content: space-around; flex-wrap: wrap;"></div>
+        </div>
+    </div>
+
+    <!-- اللعبة الأساسية -->
+    <div id="gameContainer">
+
+        <!-- الإضافات الجديدة فوق خالص -->
+        <div class="top-bar container-w" id="topBar" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom:10px;">
+            <button id="themeToggleBtn" style="flex:1;">☀️ لايت مود</button>
+            <button id="viewToggleBtn" style="flex:1;">💻 ديسكتوب</button>
+            <button id="soundToggleBtn" style="flex:1;">🔊 الصوت: شغال</button>
+            <button id="toggle3DBtn" style="flex:1;">🧊 3D: مقفول</button>
+        </div>
+
+        <div class="buttons-grid container-w" style="margin-bottom:15px; margin-top:5px;">
+            <button id="freePlayBtn" class="btn-info" style="background-color: rgb(91, 192, 222); color: white;">🔓 اللعب الحر: إيقاف</button>
+            <button id="manualTurnBtn" style="background-color:#9b59b6; color:#fff;">🔄 الدور حالياً: الأبيض</button>
+            <button id="scanBoardBtn" style="background-color:#f39c12; color:#fff; grid-column:span 2;">📸 إعداد الرقعة (صورة/FEN)</button>
+        </div>
+
+        <!-- عدادات التوقيت -->
+        <div class="timer-grid container-w">
+            <div id="whiteTimerBox" class="timer-box timer-active">
+                <span style="font-size: 14px; color: #aaa;">الأبيض</span>
+                <span id="whiteTimerText">10:00</span>
+            </div>
+            <div id="blackTimerBox" class="timer-box">
+                <span style="font-size: 14px; color: #aaa;">الأسود</span>
+                <span id="blackTimerText">10:00</span>
+            </div>
+        </div>
+
+        <div class="info-container container-w">
+            <h2>شطرنج متكامل ♟️</h2>
+            <div id="openingName">الافتتاحية: وضع البداية</div>
+            <div id="status">الأبيض بيلعب</div>
+        </div>
+
+        <div class="settings-grid container-w">
+            <select id="gameMode">
+                <option value="vsPC">أنا ضد الكمبيوتر 🤖</option>
+                <option value="vsHuman">لعب ثنائي أوفلاين 👥</option>
+                <!-- ستوك فيش بقى هو الافتراضي هنا -->
+                <option value="stockfish" selected>مود ستوك فيش (تحليل آلي) 🧠</option>
+            </select>
+            <select id="difficulty">
+                <option value="1">مستوى 1 (مبتدئ - خطوة 1)</option>
+                <option value="2">مستوى 2 (سهل - 3 خطوات)</option>
+                <option value="3">مستوى 3 (متوسط - 5 خطوات)</option>
+                <option value="4">مستوى 4 (صعب - 10 خطوات)</option>
+                <option value="5">مستوى 5 (محترف - 15 خطوة)</option>
+                <option value="6" selected>مستوى 6 (جراند ماستر - 20 خطوة)</option>
+                <option value="mix">مستوى 7 (ميكس بين 4 و 5 و 6)</option>
+            </select>
+            <select id="timeControl">
+                <option value="180">3 دقائق ⚡</option>
+                <option value="300">5 دقائق ⏱️</option>
+                <option value="600">10 دقائق 🕰️</option>
+                <option value="1800">30 دقيقة 🐢</option>
+                <option value="0" selected>بدون وقت ⏳</option>
+            </select>
+        </div>
+
+        <!-- القطع المأكولة (الجزء العلوي) -->
+        <div id="capturedTop" class="captured-area top container-w"></div>
+
+        <div id="board"></div>
+        
+        <!-- القطع المأكولة (الجزء السفلي) -->
+        <div id="capturedBottom" class="captured-area bottom container-w"></div>
+
+        <!-- شريط التعليق الجديد (كابتن شطرنج) -->
+        <div id="commentaryBox" class="commentary-box container-w">
+            <div id="commentaryText">🎙️ <strong>كابتن شطرنج:</strong> أهلاً بيكم يا ملوك المربعات! الرقعة جاهزة، ورينا الإبداع والحركات الجامدة!</div>
+        </div>
+        
+        <!-- أزرار اللعب التلقائي -->
+        <div class="auto-play-grid container-w" id="autoPlayControls" style="display:none;">
+            <button id="autoWhiteBtn">👤 أبيض تلقائي: إيقاف</button>
+            <button id="autoBlackBtn">👤 أسود تلقائي: إيقاف</button>
+        </div>
+
+        <div class="buttons-grid container-w">
+            <button id="undoBtn">◀ رجوع خطوة</button>
+            <button id="redoBtn">خطوة لقدام ▶</button>
+            <button id="flipBtn">🔃 قلب الطاولة</button>
+            <button id="switchColorBtn">🔄 العب بالأسود</button>
+            <button id="restartBtn" class="btn-primary">ابدأ جيم جديد</button>
+            <button id="stopAllBtn" class="btn-danger">🛑 إيقاف الكل</button>
+        </div>
+
+        <!-- جدول أسماء القطع -->
+        <div class="pieces-glossary container-w">
+            <h3 style="color:#81b64c; text-align:center; border-bottom:1px solid #444; padding-bottom:10px; margin-top:0;">أسماء قطع الشطرنج ♟️</h3>
+            <table class="pieces-table">
+                <tr>
+                    <th>الرمز</th>
+                    <th>الاسم بالعربي</th>
+                    <th>الاسم بالإنجليزي</th>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♚ ♔</td>
+                    <td>الملك</td>
+                    <td>King</td>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♛ ♕</td>
+                    <td>الوزير / الملكة</td>
+                    <td>Queen</td>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♜ ♖</td>
+                    <td>الرخ / الطابية</td>
+                    <td>Rook</td>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♝ ♗</td>
+                    <td>الفيل</td>
+                    <td>Bishop</td>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♞ ♘</td>
+                    <td>الحصان</td>
+                    <td>Knight</td>
+                </tr>
+                <tr>
+                    <td style="font-size:24px;">♟ ♙</td>
+                    <td>البيدق / العسكري</td>
+                    <td>Pawn</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- استدعاء المكتبات الأساسية -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script>
+    
+    <script>
+        // المتغيرات الأساسية للعبة
+        var board = null;
+        var game = new Chess();
+        var $status = $('#status');
+        
+        var stateHistory = [];
+        var currentStateIndex = -1;
+
+        var isThinking = false;
+        var selectedSquare = null; 
+        var selectedCapturedPiece = null;
+        var forceStop = false; 
+        var pendingPromotion = null;
+        
+        // متغيرات البريموف (Premoves)
+        var premoveSource = null;
+        var premoveTarget = null;
+
+        var autoWhite = false;
+        var autoBlack = false;
+
+        // متغيرات التايمر
+        var timerInterval = null;
+        var whiteTime = 0;
+        var blackTime = 0;
+        var timerStarted = false;
+        var timeIsOut = false;
+
+        // المتغيرات الخاصة بالإضافات
+        var isLightMode = false;
+        var isDesktopView = false;
+        var isFreePlay = false;
+        var is3DMode = false;
+        var isSoundEnabled = true;
+
+        // قاموس الافتتاحيات
+        var openingBook = {
+            "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR": "افتتاح البيدق الملكي (King's Pawn)",
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR": "افتتاح البيدق الملكي (King's Pawn)",
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR": "الدفاع الصقلي (Sicilian Defense)",
+            "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R": "افتتاح حصان الملك (King's Knight)",
+            "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R": "روي لوبيز / الافتتاح الإسباني (Ruy Lopez)",
+            "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R": "الافتتاح الإيطالي (Italian Game)",
+            "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR": "الدفاع الاسكندنافي (Scandinavian Defense)",
+            "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR": "دفاع أليخين (Alekhine's Defense)",
+            "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR": "الدفاع الفرنسي (French Defense)",
+            "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR": "دفاع كارو-كان (Caro-Kann Defense)",
+            "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR": "افتتاح البيدق الوزيري (Queen's Pawn)",
+            "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR": "افتتاح البيدق الوزيري (Queen's Pawn)",
+            "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR": "مناورة الوزير (Queen's Gambit)",
+            "rnbqkb1r/pppppppp/5n2/8/3P4/8/PPP1PPPP/RNBQKBNR": "الدفاع الهندي (Indian Defense)",
+            "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R": "افتتاح ريتي (Réti Opening)",
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR": "وضع البداية (Starting Position)"
+        };
+
+        // ---------- الأصوات وتفعيلها ---------- //
+        var soundMove = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
+        var soundCapture = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3');
+        var soundCheck = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3');
+        var soundGameEnd = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3');
+        
+        function playChessSound(moveObj) {
+            if (!isSoundEnabled) return;
+            try {
+                if (game.game_over() || timeIsOut) {
+                    soundGameEnd.currentTime = 0; 
+                    soundGameEnd.play().catch(e=>{});
+                } else if (game.in_check()) {
+                    soundCheck.currentTime = 0; 
+                    soundCheck.play().catch(e=>{});
+                } else if (moveObj && (moveObj.flags.indexOf('c') !== -1 || moveObj.flags.indexOf('e') !== -1)) {
+                    soundCapture.currentTime = 0; 
+                    soundCapture.play().catch(e=>{});
+                } else {
+                    soundMove.currentTime = 0; 
+                    soundMove.play().catch(e=>{});
+                }
+            } catch (e) { 
+                console.log("الصوت يحتاج إلى تفاعل أولاً", e); 
+            }
+        }
+
+        // ---------- إدارة البريموف (Premoves) ----------
+        function removePremoveHighlights() {
+            $('#board .square-55d63').removeClass('highlight-premove');
+        }
+
+        function executePremove() {
+            if (premoveSource && premoveTarget) {
+                var move = game.move({
+                    from: premoveSource,
+                    to: premoveTarget,
+                    promotion: 'q' // الترقية التلقائية في البريموف لوزير
+                });
+                
+                if (move) {
+                    playChessSound(move);
+                    startTimer();
+                    board.position(game.fen());
+                    saveCurrentState(move.from, move.to);
+                    updateStatus();
+                    checkAutoPlay();
+                }
+            }
+            premoveSource = null;
+            premoveTarget = null;
+            removePremoveHighlights();
+        }
+
+        // إلغاء البريموف بالكليك يمين
+        $(document).on('contextmenu', function(e) {
+            if(e.target.closest('#board')){
+                e.preventDefault();
+                premoveSource = null;
+                premoveTarget = null;
+                removePremoveHighlights();
+            }
+        });
+
+        // ---------- تهيئة محرك ستوك فيش ---------- //
+        var engineReady = false;
+        var engine = null;
+
+        function setupEngine(eng) {
+            eng.onmessage = function(event) {
+                var line = typeof event === 'string' ? event : event.data;
+                if (line.indexOf('uciok') > -1 || line.indexOf('readyok') > -1) {
+                    engineReady = true;
+                } else if (line.indexOf('bestmove') > -1) {
+                    if (forceStop) { 
+                        forceStop = false; 
+                        isThinking = false; 
+                        return; 
+                    }
+
+                    var match = line.match(/^bestmove\s([a-h][1-8])([a-h][1-8])([qrob])?/);
+                    if (match) {
+                        var moveObj = game.move({
+                            from: match[1], 
+                            to: match[2], 
+                            promotion: match[3] || 'q'
+                        });
+                        
+                        if (moveObj) playChessSound(moveObj); 
+                        
+                        board.position(game.fen());
+                        saveCurrentState(match[1], match[2]);
+                        startTimer(); 
+                        updateStatus();
+                        isThinking = false;
+                        
+                        // تنفيذ البريموف بعد حركة الكمبيوتر مباشرة
+                        setTimeout(function(){
+                            executePremove();
+                            checkAutoPlay();
+                        }, 50);
+                    } else {
+                        isThinking = false; 
+                        updateStatus();
+                    }
+                }
+            };
+            eng.postMessage('uci'); 
+            eng.postMessage('isready');
+        }
+
+        fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js')
+            .then(response => response.text())
+            .then(script => {
+                var blob = new Blob([script], { type: 'application/javascript' });
+                var url = window.URL.createObjectURL(blob);
+                engine = new Worker(url);
+                setupEngine(engine);
+            }).catch(err => { 
+                engine = null; 
+            });
+
+        // ---------- نظام الحماية بكلمة المرور ----------
+        $(document).ready(function() {
+            var authKey = 'chess_auth_secure_v11'; 
+            if (localStorage.getItem(authKey) === 'true') {
+                $('#loginOverlay').hide(); 
+                $('#gameContainer').css('display', 'flex'); 
+                initChessGame();
+            } else { 
+                $('#loginOverlay').css('display', 'flex'); 
+            }
+
+            $('#loginBtn').on('click', function() {
+                if ($('#passwordInput').val() === '#ZMsd42d*') {
+                    localStorage.setItem(authKey, 'true'); 
+                    $('#loginError').hide();
+                    $('#loginOverlay').fadeOut(300, function() { 
+                        $('#gameContainer').css('display', 'flex'); 
+                        initChessGame(); 
+                    });
+                } else { 
+                    $('#loginError').show(); 
+                }
+            });
+
+            $('#passwordInput').on('keypress', function(e) { 
+                if (e.which === 13) $('#loginBtn').click(); 
+            });
+
+            $('#closeWarningBtn').on('click', function() { 
+                $('#drawWarningModal').fadeOut(200); 
+            });
+        });
+
+        // ---------- إدارة التوقيت ----------
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
+            var m = Math.floor(seconds / 60); 
+            var s = seconds % 60;
+            return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+        }
+
+        function updateTimerUI() {
+            var tc = $('#timeControl').val();
+            if (tc === "0") {
+                $('#whiteTimerText').text("∞"); 
+                $('#blackTimerText').text("∞");
+                $('#whiteTimerBox, #blackTimerBox').removeClass('timer-active'); 
+                return;
+            }
+            
+            $('#whiteTimerText').text(formatTime(whiteTime)); 
+            $('#blackTimerText').text(formatTime(blackTime));
+
+            if (whiteTime <= 30 && whiteTime > 0) {
+                $('#whiteTimerText').addClass('timer-danger-text');
+            } else {
+                $('#whiteTimerText').removeClass('timer-danger-text');
+            }
+
+            if (blackTime <= 30 && blackTime > 0) {
+                $('#blackTimerText').addClass('timer-danger-text');
+            } else {
+                $('#blackTimerText').removeClass('timer-danger-text');
+            }
+
+            $('#whiteTimerBox, #blackTimerBox').removeClass('timer-active');
+            if (timerStarted && !game.game_over() && !timeIsOut && !forceStop) {
+                if (game.turn() === 'w') {
+                    $('#whiteTimerBox').addClass('timer-active');
+                } else {
+                    $('#blackTimerBox').addClass('timer-active');
+                }
+            }
+        }
+
+        function tickTimer() {
+            if (game.game_over() || timeIsOut || $('#timeControl').val() === "0" || forceStop) { 
+                clearInterval(timerInterval); 
+                return; 
+            }
+
+            if (game.turn() === 'w') {
+                whiteTime--; 
+                if (whiteTime <= 0) { 
+                    whiteTime = 0; 
+                    timeIsOut = true; 
+                    playChessSound(null); 
+                    updateStatus(); 
+                }
+            } else {
+                blackTime--; 
+                if (blackTime <= 0) { 
+                    blackTime = 0; 
+                    timeIsOut = true; 
+                    playChessSound(null); 
+                    updateStatus(); 
+                }
+            }
+            updateTimerUI();
+        }
+
+        function startTimer() {
+            if (!timerStarted && $('#timeControl').val() !== "0" && !game.game_over() && !timeIsOut) {
+                timerStarted = true; 
+                timerInterval = setInterval(tickTimer, 1000);
+            } else if (timerStarted && !timeIsOut && $('#timeControl').val() !== "0") {
+                clearInterval(timerInterval); 
+                timerInterval = setInterval(tickTimer, 1000);
+            }
+            updateTimerUI();
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval); 
+            timerStarted = false; 
+            timeIsOut = false;
+            var tc = parseInt($('#timeControl').val());
+            if(tc > 0) { 
+                whiteTime = tc; 
+                blackTime = tc; 
+            }
+            updateTimerUI();
+        }
+
+        // ---------- اللعب التلقائي ----------
+        function updateAutoButtonsUI() {
+            if ($('#gameMode').val() === 'stockfish') {
+                $('#autoPlayControls').css('display', 'grid');
+            } else {
+                $('#autoPlayControls').css('display', 'none');
+            }
+
+            if (autoWhite) {
+                $('#autoWhiteBtn').css({'background-color': '#f8f8f8', 'color': '#262421'}).text('🤖 أبيض تلقائي: شغال');
+            } else {
+                $('#autoWhiteBtn').css({'background-color': '#363431', 'color': '#c3c2c1'}).text('👤 أبيض تلقائي: إيقاف');
+            }
+
+            if (autoBlack) {
+                $('#autoBlackBtn').css({'background-color': '#111111', 'color': '#ffffff', 'border': '1px solid #4c4a47'}).text('🤖 أسود تلقائي: شغال');
+            } else {
+                $('#autoBlackBtn').css({'background-color': '#363431', 'color': '#c3c2c1', 'border': 'none'}).text('👤 أسود تلقائي: إيقاف');
+            }
+        }
+
+        function checkAutoPlay() {
+            if (game.game_over() || isThinking || timeIsOut || forceStop || pendingPromotion || isFreePlay) return;
+            var mode = $('#gameMode').val(); 
+            var turn = game.turn(); 
+            var pColor = board.orientation() === 'white' ? 'w' : 'b';
+            var shouldAIPlay = false;
+            
+            if (mode === 'vsPC' && turn !== pColor) {
+                shouldAIPlay = true;
+            } else if (mode === 'stockfish') {
+                if ((turn === 'w' && autoWhite) || (turn === 'b' && autoBlack)) {
+                    shouldAIPlay = true;
+                }
+            }
+
+            if (shouldAIPlay) {
+                isThinking = true;
+                var text = mode === 'stockfish' ? '(بيحلل الحركات...)' : '(الكمبيوتر بيفكر...)';
+                $('#status').append(' <span style="color:#aaa;font-size:0.8em;">' + text + '</span>');
+                clearTimeout(window.aiTimeout); 
+                window.aiTimeout = setTimeout(makeAIMove, 200); 
+            }
+        }
+
+        function saveCurrentState(fromSq, toSq) {
+            if (currentStateIndex < stateHistory.length - 1) {
+                stateHistory = stateHistory.slice(0, currentStateIndex + 1);
+            }
+            stateHistory.push({ 
+                fen: game.fen(), 
+                lastMove: (toSq) ? {from: fromSq, to: toSq} : null 
+            });
+            currentStateIndex++;
+        }
+
+        // ---------- الإضافات وتحديث واجهتها ----------
+        function updateAddonsUI() {
+            if (isLightMode) { 
+                $('body').addClass('light-mode'); 
+                $('#themeToggleBtn').text('🌙 دارك مود'); 
+            } else { 
+                $('body').removeClass('light-mode'); 
+                $('#themeToggleBtn').text('☀️ لايت مود'); 
+            }
+
+            if (isDesktopView) { 
+                $('body').addClass('desktop-view'); 
+                $('#viewToggleBtn').text('📱 موبايل'); 
+                setTimeout(function(){ board.resize(); }, 350); 
+            } else { 
+                $('body').removeClass('desktop-view'); 
+                $('#viewToggleBtn').text('💻 ديسكتوب'); 
+                setTimeout(function(){ board.resize(); }, 350); 
+            }
+
+            if (is3DMode) { 
+                $('#board').addClass('board-3d-active'); 
+                $('#toggle3DBtn').text('🧊 3D: شغال'); 
+            } else { 
+                $('#board').removeClass('board-3d-active'); 
+                $('#toggle3DBtn').text('🧊 3D: مقفول'); 
+            }
+
+            if (isFreePlay) { 
+                $('#freePlayBtn').text('🔓 اللعب الحر: شغال').css('background-color', '#2ecc71'); 
+                // تم إزالة السطر اللي كان بيغير القايمة لـ vsHuman إجباري
+                updateAutoButtonsUI(); 
+            } else { 
+                $('#freePlayBtn').text('🔓 اللعب الحر: إيقاف').css('background-color', '#5bc0de'); 
+            }
+
+            if (isSoundEnabled) { 
+                $('#soundToggleBtn').text('🔊 الصوت: شغال'); 
+            } else { 
+                $('#soundToggleBtn').text('🔇 الصوت: مقفول'); 
+            }
+        }
+
+        $('#themeToggleBtn').on('click', function() { 
+            isLightMode = !isLightMode; 
+            updateAddonsUI(); 
+            saveGameState(); 
+        });
+
+        $('#viewToggleBtn').on('click', function() { 
+            isDesktopView = !isDesktopView; 
+            updateAddonsUI(); 
+            saveGameState(); 
+        });
+
+        $('#soundToggleBtn').on('click', function() { 
+            isSoundEnabled = !isSoundEnabled; 
+            updateAddonsUI(); 
+            saveGameState(); 
+        });
+
+        $('#toggle3DBtn').on('click', function() { 
+            is3DMode = !is3DMode; 
+            updateAddonsUI(); 
+            saveGameState(); 
+        });
+
+        $('#freePlayBtn').on('click', function() { 
+            isFreePlay = !isFreePlay; 
+            updateAddonsUI(); 
+            saveGameState(); 
+        });
+
+        $('#manualTurnBtn').on('click', function() {
+            if (timeIsOut || game.game_over() || isThinking) return;
+            changeTurnInFen(); 
+            board.position(game.fen()); 
+            saveCurrentState(null, null); 
+            updateStatus();
+        });
+
+        $('#scanBoardBtn').on('click', function() {
+            var fen = prompt("أدخل كود الرقعة (FEN) لتحميلها أو استخراجها من صورة:", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            if (fen) {
+                var valid = game.load(fen);
+                if(valid) { 
+                    board.position(game.fen()); 
+                    stateHistory = []; 
+                    currentStateIndex = -1; 
+                    saveCurrentState(null, null); 
+                    updateStatus(); 
+                } else { 
+                    alert("كود FEN غير صحيح، اتأكد منه وحاول تاني!"); 
+                }
+            }
+        });
+
+        function initChessGame() {
+            var config = { 
+                draggable: false, 
+                position: 'start', 
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png' 
+            };
+            board = Chessboard('board', config);
+
+            var savedState = localStorage.getItem('chess_save_state_v12');
+            if (savedState) {
+                try {
+                    var state = JSON.parse(savedState);
+                    stateHistory = state.history || []; 
+                    currentStateIndex = state.historyIndex !== undefined ? state.historyIndex : -1;
+                    
+                    if (stateHistory.length > 0 && currentStateIndex >= 0) {
+                        var s = stateHistory[currentStateIndex]; 
+                        game.load(s.fen); 
+                        board.position(s.fen);
+                    } else { 
+                        game.reset(); 
+                        stateHistory = []; 
+                        currentStateIndex = -1; 
+                        saveCurrentState(null, null); 
+                    }
+
+                    board.orientation(state.orientation || 'white');
+                    $('#switchColorBtn').text(board.orientation() === 'white' ? '🔄 العب بالأسود' : '🔄 العب بالأبيض');
+                    
+                    // هنا ظبطنا إن ستوك فيش هو المود الافتراضي لو مفيش حفظ قديم
+                    $('#gameMode').val(state.mode || 'stockfish'); 
+                    $('#difficulty').val(state.diff || '6'); 
+                    $('#timeControl').val(state.timeCtrl || "0");
+                    
+                    autoWhite = state.autoW || false; 
+                    autoBlack = state.autoB || false;
+                    isLightMode = state.isLight || false; 
+                    isDesktopView = state.isDesktop || false; 
+                    isFreePlay = state.isFree || false;
+                    isSoundEnabled = state.isSound !== undefined ? state.isSound : true;
+                    is3DMode = state.is3D || false; 
+
+                    whiteTime = state.wTime !== undefined ? state.wTime : parseInt($('#timeControl').val());
+                    blackTime = state.bTime !== undefined ? state.bTime : parseInt($('#timeControl').val());
+                    timerStarted = state.tStarted || false; 
+                    timeIsOut = state.timeOut || false;
+
+                    if (timerStarted && !game.game_over() && !timeIsOut && $('#timeControl').val() !== "0") { 
+                        timerInterval = setInterval(tickTimer, 1000); 
+                    }
+                } catch(e) { 
+                    game.reset(); 
+                    stateHistory = []; 
+                    currentStateIndex = -1; 
+                    saveCurrentState(null, null); 
+                    resetTimer(); 
+                }
+            } else { 
+                game.reset(); 
+                stateHistory = []; 
+                currentStateIndex = -1; 
+                saveCurrentState(null, null); 
+                // لو مفيش حفظ، نتأكد إنه على ستوك فيش بردو
+                $('#gameMode').val('stockfish');
+                resetTimer(); 
+            }
+            
+            updateAutoButtonsUI(); 
+            updateTimerUI(); 
+            updateAddonsUI(); 
+            updateStatus(); 
+            checkAutoPlay();
+        }
+
+        function saveGameState() {
+            var state = {
+                history: stateHistory, 
+                historyIndex: currentStateIndex, 
+                mode: $('#gameMode').val(), 
+                diff: $('#difficulty').val(),
+                timeCtrl: $('#timeControl').val(), 
+                orientation: board.orientation(), 
+                autoW: autoWhite, 
+                autoB: autoBlack,
+                isLight: isLightMode, 
+                isDesktop: isDesktopView, 
+                isFree: isFreePlay, 
+                isSound: isSoundEnabled, 
+                is3D: is3DMode,
+                wTime: whiteTime, 
+                bTime: blackTime, 
+                tStarted: timerStarted, 
+                timeOut: timeIsOut
+            };
+            localStorage.setItem('chess_save_state_v12', JSON.stringify(state));
+        }
+
+        // ---------- عرض القطع المأكولة ---------- //
+        function renderCapturedPieces() {
+            var counts = { 
+                w: { p: 8, n: 2, b: 2, r: 2, q: 1 }, 
+                b: { p: 8, n: 2, b: 2, r: 2, q: 1 } 
+            };
+            var files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            for (var r = 1; r <= 8; r++) {
+                for (var c = 0; c < 8; c++) {
+                    var sq = files[c] + r; 
+                    var piece = game.get(sq);
+                    if (piece && counts[piece.color] && counts[piece.color][piece.type] !== undefined) {
+                        counts[piece.color][piece.type]--;
+                    }
+                }
+            }
+
+            var htmlW = ''; 
+            var htmlB = ''; 
+            var pieceOrder = ['q', 'r', 'b', 'n', 'p'];
+            
+            pieceOrder.forEach(function(p) {
+                for(var i=0; i < counts.w[p]; i++) {
+                    htmlW += '<img src="https://chessboardjs.com/img/chesspieces/wikipedia/w' + p.toUpperCase() + '.png" class="captured-piece">';
+                }
+                for(var i=0; i < counts.b[p]; i++) {
+                    htmlB += '<img src="https://chessboardjs.com/img/chesspieces/wikipedia/b' + p.toUpperCase() + '.png" class="captured-piece">';
+                }
+            });
+
+            if (board.orientation() === 'white') { 
+                $('#capturedTop').html(htmlW); 
+                $('#capturedBottom').html(htmlB); 
+            } else { 
+                $('#capturedTop').html(htmlB); 
+                $('#capturedBottom').html(htmlW); 
+            }
+        }
+
+        // ---------- محرك Minimax (الاحتياطي) ---------- //
+        function getPieceValue(piece, x, y) {
+            if (piece === null) return 0; 
+            var val = 0;
+            if (piece.type === 'p') val = 100; 
+            else if (piece.type === 'n') val = 320;
+            else if (piece.type === 'b') val = 330; 
+            else if (piece.type === 'r') val = 500;
+            else if (piece.type === 'q') val = 900; 
+            else if (piece.type === 'k') val = 20000;
+            return piece.color === 'w' ? val : -val;
+        }
+
+        function evaluateBoard(tempGame) {
+            var total = 0; 
+            var boardArray = tempGame.board(); 
+            for (var i = 0; i < 8; i++) {
+                for (var j = 0; j < 8; j++) {
+                    if(boardArray[i][j]) {
+                        total += getPieceValue(boardArray[i][j], i, j);
+                    }
+                }
+            }
+            return total;
+        }
+
+        function minimax(depth, tempGame, alpha, beta, isMax) {
+            if (depth === 0) return evaluateBoard(tempGame);
+            var moves = tempGame.moves();
+            if (moves.length === 0) {
+                return tempGame.in_checkmate() ? (isMax ? -999999 : 999999) : 0; 
+            }
+            
+            if (isMax) {
+                var best = -999999;
+                for (var i = 0; i < moves.length; i++) { 
+                    tempGame.move(moves[i]); 
+                    best = Math.max(best, minimax(depth - 1, tempGame, alpha, beta, !isMax)); 
+                    tempGame.undo(); 
+                    alpha = Math.max(alpha, best); 
+                    if (beta <= alpha) break; 
+                }
+                return best;
+            } else {
+                var best = 999999;
+                for (var i = 0; i < moves.length; i++) { 
+                    tempGame.move(moves[i]); 
+                    best = Math.min(best, minimax(depth - 1, tempGame, alpha, beta, !isMax)); 
+                    tempGame.undo(); 
+                    beta = Math.min(beta, best); 
+                    if (beta <= alpha) break; 
+                }
+                return best;
+            }
+        }
+
+        function minimaxRoot(depth, tempGame, isMax) {
+            var moves = tempGame.moves(); 
+            if (moves.length === 0) return null;
+            
+            var bestMove = isMax ? -999999 : 999999; 
+            var bestMoveFound = moves[0];
+            
+            for (var i = 0; i < moves.length; i++) {
+                tempGame.move(moves[i]); 
+                var value = minimax(depth - 1, tempGame, -1000000, 1000000, !isMax); 
+                tempGame.undo();
+                
+                if (isMax && value > bestMove) { 
+                    bestMove = value; 
+                    bestMoveFound = moves[i]; 
+                } else if (!isMax && value < bestMove) { 
+                    bestMove = value; 
+                    bestMoveFound = moves[i]; 
+                }
+            }
+            return bestMoveFound;
+        }
+
+        function makeAIMove() {
+            var mode = $('#gameMode').val(); 
+            var turn = game.turn(); 
+            var pColor = board.orientation() === 'white' ? 'w' : 'b';
+            
+            if (mode === 'vsPC' && turn === pColor) { 
+                isThinking = false; 
+                return; 
+            }
+            if (mode === 'stockfish') { 
+                if ((turn === 'w' && !autoWhite) || (turn === 'b' && !autoBlack)) { 
+                    isThinking = false; 
+                    return; 
+                } 
+            }
+
+            var diffVal = $('#difficulty').val(); 
+            var level = 6;
+            
+            if (diffVal === 'mix') {
+                level = [4, 5, 6][Math.floor(game.history().length / 4) % 3]; 
+            } else {
+                level = parseInt(diffVal);
+            }
+            
+            if (engine && engineReady) {
+                var skillLevel = [0,3,7,12,17,20][level-1] || 20;
+                var moveCmd = ['go depth 1','go depth 2','go depth 4','go depth 6','go depth 8','go depth 10'][level-1] || 'go depth 10';
+                
+                engine.postMessage('setoption name Skill Level value ' + skillLevel); 
+                engine.postMessage('position fen ' + game.fen()); 
+                engine.postMessage(moveCmd);
+            } else {
+                var mmDepth = level <= 2 ? level : 3; 
+                window.aiTimeout = setTimeout(function() {
+                    if (forceStop) { 
+                        forceStop = false; 
+                        isThinking = false; 
+                        return; 
+                    }
+                    
+                    var virtualGame = new Chess(game.fen()); 
+                    var bestMove = minimaxRoot(mmDepth, virtualGame, turn === 'w');
+                    
+                    if (bestMove) { 
+                        var m = game.move(bestMove); 
+                        if(m) playChessSound(m); 
+                        saveCurrentState(bestMove.from || null, bestMove.to || null); 
+                    } else { 
+                        var fallbacks = game.moves(); 
+                        if(fallbacks.length > 0) { 
+                            var m = game.move(fallbacks[0]); 
+                            if(m) playChessSound(m); 
+                            saveCurrentState(null, null); 
+                        } 
+                    }
+                    
+                    board.position(game.fen()); 
+                    startTimer(); 
+                    updateStatus(); 
+                    isThinking = false;
+                    
+                    setTimeout(function(){ 
+                        executePremove(); 
+                        checkAutoPlay(); 
+                    }, 50);
+                }, 50);
+            }
+        }
+
+        function removeHighlights() { 
+            $('#board .square-55d63').find('.legal-move-indicator').remove(); 
+            $('#board .square-55d63').removeClass('highlight-square'); 
+        }
+
+        function highlightLegalMoves(square) {
+            var moves = game.moves({ square: square, verbose: true }); 
+            if (moves.length === 0) return;
+            
+            $('#board .square-' + square).addClass('highlight-square');
+            
+            for (var i = 0; i < moves.length; i++) {
+                var isCapture = moves[i].flags.indexOf('c') !== -1 || moves[i].flags.indexOf('e') !== -1;
+                var $sq = $('#board .square-' + moves[i].to);
+                
+                if (isCapture) {
+                    $sq.append('<div class="legal-move-indicator capture"></div>'); 
+                } else {
+                    $sq.append('<div class="legal-move-indicator"></div>');
+                }
+            }
+        }
+
+        function changeTurnInFen() {
+            var parts = game.fen().split(' '); 
+            parts[1] = (parts[1] === 'w') ? 'b' : 'w'; 
+            parts[3] = '-'; 
+            parts[4] = '0';
+            if (parts[1] === 'w') parts[5] = parseInt(parts[5]) + 1; 
+            game.load(parts.join(' '));
+        }
+
+        $(document).on('click', '.captured-piece', function() {
+            if(game.game_over() || isThinking || forceStop || timeIsOut || pendingPromotion) return;
+            
+            var c = $(this).attr('data-color');
+            var t = $(this).attr('data-type');
+            
+            if (selectedCapturedPiece && selectedCapturedPiece.color === c && selectedCapturedPiece.type === t) {
+                selectedCapturedPiece = null; 
+            } else { 
+                selectedCapturedPiece = { color: c, type: t }; 
+                selectedSquare = null; 
+                removeHighlights(); 
+                removePremoveHighlights(); 
+            }
+            renderCapturedPieces(); 
+        });
+
+        $(document).on('click', '.promotion-piece', function() {
+            var promoPiece = $(this).attr('data-piece'); 
+            $('#promotionModal').fadeOut(150);
+            
+            if (pendingPromotion) {
+                var move = game.move({ 
+                    from: pendingPromotion.from, 
+                    to: pendingPromotion.to, 
+                    promotion: promoPiece 
+                });
+                
+                if (move) { 
+                    playChessSound(move); 
+                    startTimer(); 
+                    board.position(game.fen()); 
+                    removeHighlights(); 
+                    selectedSquare = null; 
+                    redoStack = []; 
+                    saveCurrentState(move.from, move.to); 
+                    updateStatus(); 
+                    checkAutoPlay(); 
+                } else { 
+                    selectedSquare = null; 
+                    removeHighlights(); 
+                }
+                pendingPromotion = null;
+            }
+        });
+
+        $('#board').on('click', '.square-55d63', function() {
+            if (board === null || pendingPromotion) return;
+            forceStop = false; 
+            
+            var square = $(this).attr('data-square'); 
+            var piece = game.get(square);
+            var mode = $('#gameMode').val(); 
+            var pColor = board.orientation() === 'white' ? 'w' : 'b';
+
+            // تفعيل نظام البريموف (Premoves)
+            if (isThinking || (mode === 'vsPC' && game.turn() !== pColor) || (mode === 'stockfish' && ((game.turn() === 'w' && autoWhite) || (game.turn() === 'b' && autoBlack)))) {
+                if (isFreePlay || game.game_over() || timeIsOut) return;
+                
+                var myColor = board.orientation() === 'white' ? 'w' : 'b';
+                
+                if (premoveSource && premoveSource === square) {
+                    premoveSource = null; 
+                    premoveTarget = null; 
+                    removePremoveHighlights(); 
+                    return;
+                }
+                
+                if (!premoveSource) {
+                    if (piece && piece.color === myColor) { 
+                        premoveSource = square; 
+                        $('#board .square-' + square).addClass('highlight-premove'); 
+                    }
+                } else {
+                    premoveTarget = square; 
+                    $('#board .square-' + square).addClass('highlight-premove');
+                }
+                return;
+            }
+
+            // تصفير البريموف لو دوري بدأ
+            premoveSource = null; 
+            premoveTarget = null; 
+            removePremoveHighlights();
+
+            // اللعب الحر
+            if (isFreePlay) {
+                if (selectedCapturedPiece) { 
+                    game.put({ type: selectedCapturedPiece.type, color: selectedCapturedPiece.color }, square); 
+                    playChessSound(null); 
+                    board.position(game.fen()); 
+                    saveCurrentState(null, square); 
+                    selectedCapturedPiece = null; 
+                    renderCapturedPieces(); 
+                    updateStatus(); 
+                    return; 
+                }
+                
+                if (selectedSquare) {
+                    if (selectedSquare === square) { 
+                        selectedSquare = null; 
+                        removeHighlights(); 
+                        return; 
+                    }
+                    var p = game.get(selectedSquare);
+                    if (p) { 
+                        game.remove(selectedSquare); 
+                        game.put(p, square); 
+                        playChessSound(null); 
+                        board.position(game.fen()); 
+                        saveCurrentState(selectedSquare, square); 
+                        selectedSquare = null; 
+                        removeHighlights(); 
+                        updateStatus(); 
+                    }
+                    return;
+                } else { 
+                    if (piece) { 
+                        selectedSquare = square; 
+                        removeHighlights(); 
+                        $('#board .square-' + square).addClass('highlight-square'); 
+                    } 
+                    return; 
+                }
+            }
+
+            // اللعب العادي
+            if (game.game_over() || timeIsOut) return;
+
+            if (selectedCapturedPiece) {
+                if (piece) { 
+                    if (piece.color === game.turn()) { 
+                        selectedCapturedPiece = null; 
+                        renderCapturedPieces(); 
+                        selectedSquare = square; 
+                        highlightLegalMoves(square); 
+                    } else { 
+                        selectedCapturedPiece = null; 
+                        renderCapturedPieces(); 
+                    } 
+                    return; 
+                }
+                
+                if (selectedCapturedPiece.type === 'p' && (square[1] === '1' || square[1] === '8')) { 
+                    selectedCapturedPiece = null; 
+                    renderCapturedPieces(); 
+                    return; 
+                }
+                
+                game.put({ type: selectedCapturedPiece.type, color: selectedCapturedPiece.color }, square); 
+                changeTurnInFen(); 
+                playChessSound(null); 
+                startTimer(); 
+                board.position(game.fen()); 
+                saveCurrentState(null, square); 
+                selectedCapturedPiece = null; 
+                updateStatus(); 
+                checkAutoPlay(); 
+                return;
+            }
+
+            if (selectedSquare) {
+                if (selectedSquare === square) { 
+                    selectedSquare = null; 
+                    removeHighlights(); 
+                    return; 
+                }
+                
+                if (piece && piece.color === game.turn()) { 
+                    selectedSquare = square; 
+                    removeHighlights(); 
+                    highlightLegalMoves(square); 
+                    return; 
+                }
+
+                var isPromo = false; 
+                var moves = game.moves({ verbose: true });
+                
+                for (var i = 0; i < moves.length; i++) {
+                    if (moves[i].from === selectedSquare && moves[i].to === square && moves[i].promotion) { 
+                        isPromo = true; 
+                        break; 
+                    }
+                }
+
+                if (isPromo) {
+                    pendingPromotion = { from: selectedSquare, to: square };
+                    var html = ''; 
+                    ['q', 'r', 'b', 'n'].forEach(function(p) { 
+                        html += '<img src="https://chessboardjs.com/img/chesspieces/wikipedia/' + game.turn() + p.toUpperCase() + '.png" class="promotion-piece" data-piece="' + p + '">'; 
+                    });
+                    $('#promotionPieces').html(html); 
+                    $('#promotionModal').css('display', 'flex'); 
+                    return; 
+                }
+
+                var tempGame = new Chess(game.fen()); 
+                var testMove = tempGame.move({ from: selectedSquare, to: square, promotion: 'q' });
+                
+                if (testMove && tempGame.in_draw()) { 
+                    $('#drawWarningText').text("هذه الحركة ستؤدي للتعادل! متأكد من تنفيذها؟"); 
+                    $('#drawWarningModal').css('display', 'flex'); 
+                }
+
+                var move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
+                
+                if (move) { 
+                    playChessSound(move); 
+                    startTimer(); 
+                    board.position(game.fen()); 
+                    removeHighlights(); 
+                    selectedSquare = null; 
+                    saveCurrentState(move.from, move.to); 
+                    updateStatus(); 
+                    checkAutoPlay(); 
+                } else { 
+                    selectedSquare = null; 
+                    removeHighlights(); 
+                }
+            } else {
+                if (!piece || piece.color !== game.turn()) return; 
+                selectedSquare = square; 
+                removeHighlights(); 
+                highlightLegalMoves(square);
+            }
+        });
+
+        // تحديث اسم الافتتاحية
+        function updateOpening() {
+            var currentFen = game.fen().split(' ')[0];
+            var name = openingBook[currentFen];
+            
+            if (name) {
+                $('#openingName').text('الافتتاحية: ' + name);
+            } else if (game.history().length === 0) {
+                $('#openingName').text('الافتتاحية: وضع البداية');
+            }
+        }
+
+        // ---------- نظام التعليق بالعامية المصرية ---------- //
+        function updateCommentary() {
+            if (isFreePlay) {
+                $('#commentaryText').html('🎙️ <strong>كابتن شطرنج:</strong> إحنا في اللعب الحر دلوقتي، رص القطع براحتك وظبط خطتك.');
+                return;
+            }
+
+            var history = game.history({ verbose: true });
+            
+            if (history.length === 0) {
+                $('#commentaryText').html('🎙️ <strong>كابتن شطرنج:</strong> أهلاً بيكم يا ملوك المربعات! الرقعة جاهزة، ورينا الإبداع والحركات الجامدة!');
+                return;
+            }
+
+            var lastMove = history[history.length - 1];
+            var pieceNames = { p: 'العسكري', n: 'الحصان', b: 'الفيل', r: 'الطابية', q: 'الوزير', k: 'الملك' };
+            var colorName = lastMove.color === 'w' ? 'الأبيض' : 'الأسود';
+            var pName = pieceNames[lastMove.piece];
+            var comment = "";
+
+            if (game.in_checkmate()) {
+                comment = "كش مات يا فنان! " + colorName + " بيقفل الجيم بضربة قاضية، أداء يدرس الصراحة! 🏆";
+            } else if (game.in_draw()) {
+                comment = "يا خسارة، الجيم قفل على تعادل! ماتش تكتيكي من العيار الثقيل ومفيش حد عرف يكسر التاني. 🤝";
+            } else {
+                // تبييت
+                if (lastMove.san === 'O-O') {
+                    comment = colorName + " عمل تبييت قصير، بيأمن بيه الملك وبيدخل الطابية في اللعب.. خطوة معلمين! 🏰";
+                } else if (lastMove.san === 'O-O-O') {
+                    comment = colorName + " عمل تبييت طويل! شكلنا داخلين على هجوم شرس يا جدعان، الطابية بتسن سنانها! 🏰";
+                } 
+                // ترقية
+                else if (lastMove.promotion) {
+                    var promoPiece = pieceNames[lastMove.promotion];
+                    comment = "يا سلام يا سلام! البطل الصغير وصل لآخر المشوار ورقى لـ " + promoPiece + "! الجيم هيولع نار 🔥";
+                } 
+                // أسر قطعة
+                else if (lastMove.flags.indexOf('c') !== -1 || lastMove.flags.indexOf('e') !== -1) {
+                    comment = "بوم! " + colorName + " بياكل حتة مهمة بـ " + pName + " في المربع " + lastMove.to + ".. دي ضربة توجع وتلخبط الحسابات! ⚔️";
+                } 
+                // كش ملك
+                else if (game.in_check()) {
+                    comment = "كش ملك! " + colorName + " بيهاجم بـ " + pName + " لـ " + lastMove.to + " وبيقول للملك اصحى للكلام ووسع من هنا! ⚠️";
+                } 
+                // حركات عادية
+                else {
+                    if (lastMove.piece === 'p') {
+                        comment = colorName + " بيزق " + pName + " لـ " + lastMove.to + " بيكسب مساحة في الرقعة وبيضيق الخناق.";
+                    } else if (lastMove.piece === 'n') {
+                        comment = "مناورة خطيرة! " + colorName + " بينط بـ " + pName + " لـ " + lastMove.to + " وبيعمل إزعاج في دفاعات الخصم. 🐎";
+                    } else if (lastMove.piece === 'b') {
+                        comment = colorName + " بينشر " + pName + " بتاعه لـ " + lastMove.to + " وبيمسك وتر مهم جداً.. عينه على الهجوم! 🎯";
+                    } else if (lastMove.piece === 'r') {
+                        comment = colorName + " بيحرك " + pName + " لـ " + lastMove.to + "، الطوابي بتحب العواميد المفتوحة والشغل الثقيل يا جماعة! 🧱";
+                    } else if (lastMove.piece === 'q') {
+                        comment = "الخطر الحقيقي نزل الساحة! " + colorName + " بيطلع بـ " + pName + " لـ " + lastMove.to + ".. شكل فيه هجوم بيتطبخ! 👑";
+                    } else if (lastMove.piece === 'k') {
+                        comment = colorName + " بيحرك " + pName + " لـ " + lastMove.to + ".. خطوة هادية وشكلها كده تحسين وضع وتأمين للمستقبل.";
+                    }
+                }
+            }
+
+            $('#commentaryText').html('🎙️ <strong>كابتن شطرنج:</strong> ' + comment);
+        }
+
+        // تحديث الحالة العامة
+        function updateStatus() {
+            var statusHTML = ''; 
+            var moveColor = game.turn() === 'b' ? 'الأسود' : 'الأبيض';
+            
+            $('#manualTurnBtn').text('🔄 الدور حالياً: ' + moveColor);
+
+            if (timeIsOut) { 
+                clearInterval(timerInterval); 
+                statusHTML = 'انتهى الوقت! ' + ((whiteTime <= 0) ? 'الأبيض' : 'الأسود') + ' خسر الجيم ⏳'; 
+            } else if (game.in_checkmate()) { 
+                clearInterval(timerInterval); 
+                statusHTML = 'كش مات! ' + moveColor + ' خسر الجيم.'; 
+            } else if (game.in_draw()) { 
+                clearInterval(timerInterval); 
+                statusHTML = 'الجيم خلص تعادل!'; 
+            } else { 
+                statusHTML = 'دور: ' + moveColor; 
+                if (game.in_check()) statusHTML += ' (كش ملك!)'; 
+            }
+            
+            $status.html(statusHTML); 
+            updateOpening();
+            
+            $('.square-55d63').removeClass('highlight-last-move');
+            
+            if (currentStateIndex >= 0 && stateHistory[currentStateIndex] && stateHistory[currentStateIndex].lastMove) {
+                var last = stateHistory[currentStateIndex].lastMove;
+                if (last.from) $('#board .square-' + last.from).addClass('highlight-last-move');
+                if (last.to) $('#board .square-' + last.to).addClass('highlight-last-move');
+            }
+            
+            renderCapturedPieces(); 
+            updateTimerUI(); 
+            saveGameState(); 
+
+            // استدعاء نظام التعليق بعد كل حركة
+            updateCommentary();
+        }
+
+        // زراير اللعب التلقائي
+        $('#autoWhiteBtn').on('click', function() { 
+            if (timeIsOut) return; 
+            forceStop = false; 
+            autoWhite = !autoWhite; 
+            updateAutoButtonsUI(); 
+            if (!isThinking) checkAutoPlay(); 
+        });
+
+        $('#autoBlackBtn').on('click', function() { 
+            if (timeIsOut) return; 
+            forceStop = false; 
+            autoBlack = !autoBlack; 
+            updateAutoButtonsUI(); 
+            if (!isThinking) checkAutoPlay(); 
+        });
+
+        // زرار الرجوع خطوة
+        $('#undoBtn').on('click', function() {
+            forceStop = false; 
+            if (isThinking) return;
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            renderCapturedPieces();
+            
+            var mode = $('#gameMode').val(); 
+            var undid = false;
+            
+            if (mode === 'vsPC' || mode === 'stockfish') { 
+                if (currentStateIndex > 1) { 
+                    currentStateIndex -= 2; 
+                    undid = true; 
+                } 
+            } else { 
+                if (currentStateIndex > 0) { 
+                    currentStateIndex--; 
+                    undid = true; 
+                } 
+            }
+
+            if (undid) { 
+                game.load(stateHistory[currentStateIndex].fen); 
+                board.position(stateHistory[currentStateIndex].fen); 
+                playChessSound(null); 
+                updateStatus(); 
+                checkAutoPlay(); 
+            }
+        });
+
+        // زرار الخطوة لقدام
+        $('#redoBtn').on('click', function() {
+            forceStop = false; 
+            if (isThinking) return;
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            renderCapturedPieces();
+
+            var mode = $('#gameMode').val(); 
+            var redid = false;
+            
+            if ((mode === 'vsPC' || mode === 'stockfish') && currentStateIndex < stateHistory.length - 2) { 
+                currentStateIndex += 2; 
+                redid = true; 
+            } else if (currentStateIndex < stateHistory.length - 1) { 
+                currentStateIndex++; 
+                redid = true; 
+            }
+
+            if (redid) { 
+                game.load(stateHistory[currentStateIndex].fen); 
+                board.position(stateHistory[currentStateIndex].fen); 
+                playChessSound(null); 
+                updateStatus(); 
+                checkAutoPlay(); 
+            }
+        });
+
+        // قلب الطاولة
+        $('#flipBtn').on('click', function() { 
+            if (board === null) return; 
+            board.flip(); 
+            selectedSquare = null; 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            updateStatus(); 
+            saveGameState(); 
+        });
+
+        // تغيير اللون
+        $('#switchColorBtn').on('click', function() {
+            if (isThinking || board === null || forceStop) return;
+            
+            forceStop = false; 
+            game.reset(); 
+            stateHistory = []; 
+            currentStateIndex = -1; 
+            saveCurrentState(null, null);
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            resetTimer(); 
+            removeHighlights(); 
+            removePremoveHighlights();
+            
+            if (board.orientation() === 'white') { 
+                board.orientation('black'); 
+                $(this).text('🔄 العب بالأبيض'); 
+            } else { 
+                board.orientation('white'); 
+                $(this).text('🔄 العب بالأسود'); 
+            }
+            
+            board.start(); 
+            updateStatus(); 
+            checkAutoPlay();
+        });
+
+        // جيم جديد
+        $('#restartBtn').on('click', function() {
+            if (isThinking || board === null) return;
+            
+            game.reset(); 
+            stateHistory = []; 
+            currentStateIndex = -1; 
+            saveCurrentState(null, null);
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            forceStop = false; 
+            resetTimer(); 
+            board.start(); 
+            board.orientation('white');
+            
+            $('#switchColorBtn').text('🔄 العب بالأسود'); 
+            updateStatus(); 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            checkAutoPlay();
+        });
+
+        // تغيير الإعدادات
+        $('#gameMode, #difficulty').on('change', function() {
+            if (isThinking) return;
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            forceStop = false; 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            updateAutoButtonsUI(); 
+            saveGameState(); 
+            checkAutoPlay();
+        });
+
+        $('#timeControl').on('change', function() { 
+            $('#restartBtn').click(); 
+        });
+
+        // إيقاف الكل
+        $('#stopAllBtn').on('click', function() {
+            forceStop = true; 
+            if (engine) engine.postMessage('stop'); 
+            clearTimeout(window.aiTimeout); 
+            
+            isThinking = false; 
+            autoWhite = false; 
+            autoBlack = false; 
+            updateAutoButtonsUI();
+            
+            clearInterval(timerInterval); 
+            timerStarted = false;
+            
+            selectedSquare = null; 
+            selectedCapturedPiece = null; 
+            pendingPromotion = null; 
+            premoveSource = null; 
+            premoveTarget = null;
+            
+            $('#promotionModal').hide(); 
+            removeHighlights(); 
+            removePremoveHighlights(); 
+            renderCapturedPieces();
+            
+            var currentStatus = $('#status').html();
+            $('#status').html(currentStatus.replace(/<span.*?\(.*?\).*?<\/span>/g, '') + ' <span style="color:#ff4c4c; font-size:0.8em;">[تم الإيقاف]</span>');
+            
+            saveGameState();
+        });
+
+    </script>
+</body>
+</html>
